@@ -1,5 +1,21 @@
 # Vue 3 + Vite
+## git初始化 及 推送GitHub Repository
+```
+git init
+git add .
+git commit -m "init"
+git branch -M main
+git remote add origin https://github.com/webnd06/leave-system.git
+git push -u origin main
+```
+## 部署
+```
+npm run build
+npm run deploy
+```
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 部署後的網址
+https://webnd06.github.io/leave-system/
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## 手機LINE 測試的LIFF網址
+https://liff.line.me/2012277831-8mVpJ2Am
