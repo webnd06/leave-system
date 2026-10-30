@@ -13,6 +13,8 @@ const reason = ref('')
 
 const msg = ref('初始化中...')
 
+const histories = ref([])
+
 onMounted(async () => {
 
   await liff.init({
@@ -73,6 +75,38 @@ async function submitLeave() {
     )
 
     console.error(e)
+
+  }
+
+}
+
+async function loadHistory() {
+
+  try {
+
+    const url =
+        `${GAS_URL}?action=history&userId=${userId.value}`
+
+    alert(url)
+
+    const response =
+        await fetch(url)
+
+    alert(
+        'status=' +
+        response.status
+    )
+
+    histories.value =
+        await response.json()
+
+  }
+  catch(e) {
+
+    alert(
+        'error=' +
+        e.message
+    )
 
   }
 
@@ -158,5 +192,56 @@ async function submitLeave() {
   <button @click="submitLeave">
     送出請假單
   </button>
+
+  <br>
+
+  <button @click="loadHistory">
+
+    我的請假紀錄
+
+  </button>
+
+  <hr>
+
+  <h3>請假紀錄</h3>
+
+  <div
+      v-for="(item,index) in histories"
+      :key="index"
+  >
+
+    <div>
+
+      假別：
+      {{ item.leaveType }}
+
+    </div>
+
+    <div>
+
+      日期：
+      {{ item.startDate }}
+      ~
+      {{ item.endDate }}
+
+    </div>
+
+    <div>
+
+      原因：
+      {{ item.reason }}
+
+    </div>
+
+    <div>
+
+      狀態：
+      {{ item.status }}
+
+    </div>
+
+    <hr>
+
+  </div>
 
 </template>
