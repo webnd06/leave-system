@@ -100,6 +100,11 @@ async function loadHistory() {
     histories.value =
         await response.json()
 
+    alert(
+        "筆數=" +
+        histories.value.length
+    )
+
   }
   catch(e) {
 
@@ -109,6 +114,45 @@ async function loadHistory() {
     )
 
   }
+
+}
+
+async function cancelLeave(
+    leaveId
+){
+
+  if(
+      !confirm('確定撤銷嗎？')
+  ){
+    return
+  }
+
+  const formData =
+      new FormData()
+
+  formData.append(
+      'data',
+      JSON.stringify({
+
+        action:'cancel',
+
+        leaveId
+
+      })
+  )
+
+  await fetch(
+      GAS_URL,
+      {
+
+        method:'POST',
+
+        body:formData
+
+      }
+  )
+
+  await loadHistory()
 
 }
 </script>
@@ -209,6 +253,19 @@ async function loadHistory() {
       v-for="(item,index) in histories"
       :key="index"
   >
+    <div><button
+        v-if="item.status=='待審核'"
+        @click="cancelLeave(item.leaveId)"
+    >
+      撤銷
+    </button></div>
+
+    <div>
+
+      申請單號：
+      {{ item.leaveId }}
+
+    </div>
 
     <div>
 
