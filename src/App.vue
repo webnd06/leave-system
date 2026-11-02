@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import {ref, onMounted} from 'vue'
 import liff from '@line/liff'
-import { LIFF_ID, GAS_URL } from './config'
+import {LIFF_ID, GAS_URL} from './config'
 
 const name = ref('')
 const userId = ref('')
@@ -11,6 +11,8 @@ const startDate = ref('')
 const endDate = ref('')
 const reason = ref('')
 const role = ref('USER')
+const currentTab =
+    ref('apply')
 
 const msg = ref('初始化中...')
 
@@ -76,8 +78,7 @@ async function submitLeave() {
 
     alert("fetch完成")
 
-  }
-  catch (e) {
+  } catch (e) {
 
     alert(
         "error=" + e.message
@@ -114,8 +115,7 @@ async function loadHistory() {
         histories.value.length
     )
 
-  }
-  catch(e) {
+  } catch (e) {
 
     alert(
         'error=' +
@@ -128,11 +128,11 @@ async function loadHistory() {
 
 async function cancelLeave(
     leaveId
-){
+) {
 
-  if(
+  if (
       !confirm('確定撤銷嗎？')
-  ){
+  ) {
     return
   }
 
@@ -143,9 +143,12 @@ async function cancelLeave(
       'data',
       JSON.stringify({
 
-        action:'cancel',
+        action: 'cancel',
 
-        leaveId
+        leaveId,
+
+        approver:
+        name.value
 
       })
   )
@@ -154,9 +157,9 @@ async function cancelLeave(
       GAS_URL,
       {
 
-        method:'POST',
+        method: 'POST',
 
-        body:formData
+        body: formData
 
       }
   )
@@ -164,21 +167,27 @@ async function cancelLeave(
   await loadHistory()
 
 }
+
 //主管相關
 async function loadPending() {
 
   const response =
       await fetch(
-          `${GAS_URL}?action=pending`
+          `${GAS_URL}?action=pending&userId=${userId.value}`
       )
 
   pendingList.value =
       await response.json()
 
 }
+
 async function approveLeave(
     leaveId
 ) {
+
+  alert(
+      '核准:' + leaveId
+  );
 
   const formData =
       new FormData()
@@ -186,25 +195,38 @@ async function approveLeave(
   formData.append(
       'data',
       JSON.stringify({
-        action:'approve',
-        leaveId
+        action: 'approve',
+        leaveId,
+
+        approver:
+        name.value
       })
   )
 
-  await fetch(
+  const response = await fetch(
       GAS_URL,
       {
-        method:'POST',
-        body:formData
+        method: 'POST',
+        body: formData
       }
+  )
+
+  alert(
+      'status=' +
+      response.status
   )
 
   await loadPending()
 
 }
+
 async function rejectLeave(
     leaveId
 ) {
+
+  alert(
+      '退回:' + leaveId
+  );
 
   const formData =
       new FormData()
@@ -212,19 +234,27 @@ async function rejectLeave(
   formData.append(
       'data',
       JSON.stringify({
-        action:'reject',
-        leaveId
+        action: 'reject',
+        leaveId,
+
+        approver:
+        name.value
       })
   )
 
-  await fetch(
+
+  const response = await fetch(
       GAS_URL,
       {
-        method:'POST',
-        body:formData
+        method: 'POST',
+        body: formData
       }
   )
 
+  alert(
+      'status=' +
+      response.status
+  )
   await loadPending()
 
 }
@@ -248,190 +278,237 @@ async function rejectLeave(
 
   <hr>
 
-  <div>
+  <div class="menu">
 
-    <label>假別</label>
+    <button
+        @click="currentTab='apply'">
+      請假申請
+    </button>
 
-    <select v-model="leaveType">
+    <button
+        @click="currentTab='history'">
+      我的紀錄
+    </button>
 
-      <option value="">
-        請選擇
-      </option>
-
-      <option value="特休">
-        特休
-      </option>
-
-      <option value="事假">
-        事假
-      </option>
-
-      <option value="病假">
-        病假
-      </option>
-
-    </select>
+    <button
+        v-if="role==='ADMIN'"
+        @click="currentTab='approve'">
+      主管審核
+    </button>
 
   </div>
 
-  <br>
+  <div v-if="currentTab==='apply'">
+    <hr>
 
-  <div>
+    <div>
 
-    <label>開始日期</label>
+      <label>假別</label>
 
-    <input
-        type="date"
-        v-model="startDate">
+      <select v-model="leaveType">
 
-  </div>
+        <option value="">
+          請選擇
+        </option>
 
-  <br>
+        <option value="特休">
+          特休
+        </option>
 
-  <div>
+        <option value="事假">
+          事假
+        </option>
 
-    <label>結束日期</label>
+        <option value="病假">
+          病假
+        </option>
 
-    <input
-        type="date"
-        v-model="endDate">
+      </select>
 
-  </div>
+    </div>
 
-  <br>
+    <br>
 
-  <div>
+    <div>
 
-    <label>請假原因</label>
+      <label>開始日期</label>
 
-    <textarea
-        rows="4"
-        cols="30"
-        v-model="reason">
+      <input
+          type="date"
+          v-model="startDate">
+
+    </div>
+
+    <br>
+
+    <div>
+
+      <label>結束日期</label>
+
+      <input
+          type="date"
+          v-model="endDate">
+
+    </div>
+
+    <br>
+
+    <div>
+
+      <label>請假原因</label>
+
+      <textarea
+          rows="4"
+          cols="30"
+          v-model="reason">
   </textarea>
 
-  </div>
-  <div v-if="role==='ADMIN'">
+    </div>
 
-    <hr>
+    <button @click="submitLeave">
+      送出請假單
+    </button>
+
+    <br>
+  </div>
+
+  <div
+      v-if="
+     role==='ADMIN'
+     && currentTab==='approve'
+  "
+  >
 
     <button @click="loadPending">
-
-      待審核清單
-
+      載入待審核
     </button>
+
+    <!-- pendingList -->
+    <div
+        v-for="item in pendingList"
+        :key="item.leaveId"
+    >
+
+      <hr>
+
+      <div>
+        員工：
+        {{ item.userName }}
+      </div>
+
+      <div>
+        假別：
+        {{ item.leaveType }}
+      </div>
+
+      <div>
+        日期：
+        {{ item.startDate }}
+        ~
+        {{ item.endDate }}
+      </div>
+
+      <div>
+        原因：
+        {{ item.reason }}
+      </div>
+
+      <button
+          @click="approveLeave(item.leaveId)"
+      >
+        核准
+      </button>
+
+      <button
+          @click="rejectLeave(item.leaveId)"
+      >
+        退回
+      </button>
+
+    </div>
 
   </div>
   <br>
 
-  <button @click="submitLeave">
-    送出請假單
-  </button>
+  <div v-if="currentTab==='history'">
 
-  <br>
+    <button @click="loadHistory">
+      重新載入
+    </button>
+    <h3>請假紀錄</h3>
 
-  <button @click="loadHistory">
-
-    我的請假紀錄
-
-  </button>
-
-  <hr>
-
-  <h3>請假紀錄</h3>
-
-  <div
-      v-for="(item,index) in histories"
-      :key="index"
-  >
-    <div><button
-        v-if="item.status=='待審核'"
-        @click="cancelLeave(item.leaveId)"
+    <div
+        v-for="(item,index) in histories"
+        :key="index"
     >
-      撤銷
-    </button></div>
+      <div>
+        <button
+            v-if="item.status=='待審核'"
+            @click="cancelLeave(item.leaveId)"
+        >
+          撤銷
+        </button>
+      </div>
 
-    <div>
+      <div>
 
-      申請單號：
-      {{ item.leaveId }}
+        申請單號：
+        {{ item.leaveId }}
+
+      </div>
+
+      <div>
+
+        假別：
+        {{ item.leaveType }}
+
+      </div>
+
+      <div>
+
+        日期：
+        {{ item.startDate }}
+        ~
+        {{ item.endDate }}
+
+      </div>
+
+      <div>
+
+        原因：
+        {{ item.reason }}
+
+      </div>
+
+      <div>
+
+        狀態：
+        {{ item.status }}
+
+      </div>
+      <div
+          v-if="item.approver"
+      >
+
+        審核人：
+        {{ item.approver }}
+
+      </div>
+
+      <div
+          v-if="
+    item.approveTime
+  "
+      >
+
+        審核時間：
+        {{ item.approveTime }}
+
+      </div>
+
+      <hr>
 
     </div>
-
-    <div>
-
-      假別：
-      {{ item.leaveType }}
-
-    </div>
-
-    <div>
-
-      日期：
-      {{ item.startDate }}
-      ~
-      {{ item.endDate }}
-
-    </div>
-
-    <div>
-
-      原因：
-      {{ item.reason }}
-
-    </div>
-
-    <div>
-
-      狀態：
-      {{ item.status }}
-
-    </div>
-
-    <hr>
-
   </div>
 
-  <div
-      v-for="item in pendingList"
-      :key="item.leaveId"
-  >
-
-    <hr>
-
-    <div>
-      員工：
-      {{ item.userName }}
-    </div>
-
-    <div>
-      假別：
-      {{ item.leaveType }}
-    </div>
-
-    <div>
-      日期：
-      {{ item.startDate }}
-      ~
-      {{ item.endDate }}
-    </div>
-
-    <div>
-      原因：
-      {{ item.reason }}
-    </div>
-
-    <button
-        @click="approveLeave(item.leaveId)"
-    >
-      核准
-    </button>
-
-    <button
-        @click="rejectLeave(item.leaveId)"
-    >
-      退回
-    </button>
-
-  </div>
 </template>
