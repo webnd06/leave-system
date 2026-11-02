@@ -10,10 +10,12 @@ const leaveType = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const reason = ref('')
+const role = ref('USER')
 
 const msg = ref('初始化中...')
 
 const histories = ref([])
+const pendingList = ref([])
 
 onMounted(async () => {
 
@@ -33,6 +35,13 @@ onMounted(async () => {
   msg.value =
       'LIFF初始化成功'
 
+  const roleResponse =
+      await fetch(
+          `${GAS_URL}?action=role&userId=${userId.value}`
+      )
+
+  role.value =
+      await roleResponse.text()
 })
 
 async function submitLeave() {
@@ -155,6 +164,70 @@ async function cancelLeave(
   await loadHistory()
 
 }
+//主管相關
+async function loadPending() {
+
+  const response =
+      await fetch(
+          `${GAS_URL}?action=pending`
+      )
+
+  pendingList.value =
+      await response.json()
+
+}
+async function approveLeave(
+    leaveId
+) {
+
+  const formData =
+      new FormData()
+
+  formData.append(
+      'data',
+      JSON.stringify({
+        action:'approve',
+        leaveId
+      })
+  )
+
+  await fetch(
+      GAS_URL,
+      {
+        method:'POST',
+        body:formData
+      }
+  )
+
+  await loadPending()
+
+}
+async function rejectLeave(
+    leaveId
+) {
+
+  const formData =
+      new FormData()
+
+  formData.append(
+      'data',
+      JSON.stringify({
+        action:'reject',
+        leaveId
+      })
+  )
+
+  await fetch(
+      GAS_URL,
+      {
+        method:'POST',
+        body:formData
+      }
+  )
+
+  await loadPending()
+
+}
 </script>
 
 <template>
@@ -164,6 +237,14 @@ async function cancelLeave(
   <div>姓名：{{ name }}</div>
 
   <div>LINE ID：{{ userId }}</div>
+
+  <div>
+
+    角色：
+
+    {{ role }}
+
+  </div>
 
   <hr>
 
@@ -230,7 +311,17 @@ async function cancelLeave(
   </textarea>
 
   </div>
+  <div v-if="role==='ADMIN'">
 
+    <hr>
+
+    <button @click="loadPending">
+
+      待審核清單
+
+    </button>
+
+  </div>
   <br>
 
   <button @click="submitLeave">
@@ -301,4 +392,46 @@ async function cancelLeave(
 
   </div>
 
+  <div
+      v-for="item in pendingList"
+      :key="item.leaveId"
+  >
+
+    <hr>
+
+    <div>
+      員工：
+      {{ item.userName }}
+    </div>
+
+    <div>
+      假別：
+      {{ item.leaveType }}
+    </div>
+
+    <div>
+      日期：
+      {{ item.startDate }}
+      ~
+      {{ item.endDate }}
+    </div>
+
+    <div>
+      原因：
+      {{ item.reason }}
+    </div>
+
+    <button
+        @click="approveLeave(item.leaveId)"
+    >
+      核准
+    </button>
+
+    <button
+        @click="rejectLeave(item.leaveId)"
+    >
+      退回
+    </button>
+
+  </div>
 </template>
