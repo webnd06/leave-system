@@ -25,6 +25,10 @@ const endTime = ref('18:00')
 const leaveHours = ref(0)
 const leaveDays = ref(0)
 
+const deputy = ref('')
+
+const employees = ref([])
+
 const timeOptions = []
 
 const balance =
@@ -78,6 +82,8 @@ onMounted(async () => {
       await roleResponse.text()
 
   await loadBalance()
+
+  await loadEmployees()
 })
 
 async function submitLeave() {
@@ -92,9 +98,10 @@ async function submitLeave() {
       startTime:startTime.value,
       endDate: endDate.value,
       endTime:endTime.value,
-      reason: reason.value,
       leaveHours:leaveHours.value,
-      leaveDays: leaveDays.value
+      leaveDays: leaveDays.value,
+      deputy: deputy.value,
+      reason: reason.value,
     }
 
     const formData = new FormData()
@@ -305,7 +312,9 @@ function calculateLeaveHours() {
 
   if (
       !startDate.value ||
-      !endDate.value
+      !endDate.value ||
+      !startTime.value ||
+      !endTime.value
   ) {
 
     leaveHours.value = 0
@@ -314,72 +323,78 @@ function calculateLeaveHours() {
     return
   }
 
-  let totalHours = 0;
+  let totalHours = 0
 
   let current =
       new Date(
           startDate.value + 'T00:00:00'
-      );
+      )
 
   let end =
       new Date(
           endDate.value + 'T00:00:00'
-      );
+      )
 
-  while(current <= end){
+  while (current <= end) {
 
-    const dayOfWeek =
-        current.getDay();
-
-    // 星期日=0
-    // 星期六=6
-
-    if(
-        dayOfWeek === 0 ||
-        dayOfWeek === 6
-    ){
-
-      current.setDate(
-          current.getDate()+1
-      );
-
-      continue;
-    }
-
-
+    // 取得 yyyy-MM-dd
     const yyyy =
-        current.getFullYear();
+        current.getFullYear()
 
     const mm =
         String(
-            current.getMonth()+1
-        ).padStart(2,'0');
+            current.getMonth() + 1
+        ).padStart(2, '0')
 
     const dd =
         String(
             current.getDate()
-        ).padStart(2,'0');
+        ).padStart(2, '0')
 
     const currentDate =
-        `${yyyy}-${mm}-${dd}`;
+        `${yyyy}-${mm}-${dd}`
 
-    let beginTime = '09:00';
-    let finishTime = '18:00';
+    // 星期日=0
+    // 星期六=6
+    const dayOfWeek =
+        current.getDay()
 
-    if(
-        currentDate ==
-        startDate.value
-    ){
-      beginTime =
-          startTime.value;
+    // 排除週六週日
+    if (
+        dayOfWeek === 0 ||
+        dayOfWeek === 6
+    ) {
+
+      current.setDate(
+          current.getDate() + 1
+      )
+
+      continue
     }
 
-    if(
-        currentDate ==
+    let beginTime = '09:00'
+    let finishTime = '18:00'
+
+    // 開始日
+    if (
+        currentDate ===
+        startDate.value
+    ) {
+
+      beginTime =
+          startTime.value
+
+    }
+
+    // 結束日
+    if (
+        currentDate ===
         endDate.value
-    ){
+    ) {
+
       finishTime =
-          endTime.value;
+          endTime.value
+
     }
 
     totalHours +=
@@ -387,61 +402,70 @@ function calculateLeaveHours() {
             currentDate,
             beginTime,
             finishTime
-        );
+        )
 
     current.setDate(
-        current.getDate()+1
-    );
+        current.getDate() + 1
+    )
   }
+
+  // 四捨五入到 0.5 小時
 
   leaveHours.value =
       Math.round(
           totalHours * 2
-      ) / 2;
+      ) / 2
 
   leaveDays.value =
       Number(
           (
-              leaveHours.value/8
+              leaveHours.value / 8
           ).toFixed(2)
-      );
+      )
 }
+
+//單日工時計算
 function getWorkHours(
     date,
     beginTime,
     finishTime
-){
+) {
 
   const begin =
       new Date(
           `${date}T${beginTime}`
-      );
+      )
 
   const finish =
       new Date(
           `${date}T${finishTime}`
-      );
+      )
 
-  if(finish <= begin){
-    return 0;
+  if (
+      finish <= begin
+  ) {
+
+    return 0
   }
 
   let minutes =
-      (finish - begin)
+      (
+          finish - begin
+      )
       /
       1000
       /
-      60;
+      60
 
   const lunchStart =
       new Date(
           `${date}T12:00`
-      );
+      )
 
   const lunchEnd =
       new Date(
           `${date}T13:00`
-      );
+      )
 
   const overlap =
       Math.max(
@@ -455,16 +479,16 @@ function getWorkHours(
               begin,
               lunchStart
           )
-      );
+      )
 
   minutes -=
       overlap
       /
       1000
       /
-      60;
+      60
 
-  return minutes / 60;
+  return minutes / 60
 }
 
 async function loadBalance(){
@@ -475,6 +499,17 @@ async function loadBalance(){
       )
 
   balance.value =
+      await response.json()
+
+}
+async function loadEmployees(){
+
+  const response =
+      await fetch(
+          `${GAS_URL}?action=employees`
+      )
+
+  employees.value =
       await response.json()
 
 }
@@ -667,6 +702,34 @@ async function loadBalance(){
       天
 
     </div>
+    <br>
+    <div>
+
+      <label>
+        代理人
+      </label>
+
+      <select
+          v-model="deputy"
+      >
+
+        <option value="">
+          請選擇代理人
+        </option>
+
+        <option
+            v-for="emp in employees"
+            :key="emp.userId"
+            :value="emp.name"
+        >
+
+          {{ emp.name }}
+
+        </option>
+
+      </select>
+
+    </div>
 
     <br>
 
@@ -744,6 +807,10 @@ async function loadBalance(){
         {{ Number(item.leaveDays).toFixed(1)  }}
         天
 
+      </div>
+      <div>
+        代理人：
+        {{ item.deputy }}
       </div>
       <div>
         原因：
