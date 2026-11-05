@@ -19,6 +19,29 @@ const msg = ref('初始化中...')
 const histories = ref([])
 const pendingList = ref([])
 
+const startTime = ref('09:00')
+const endTime = ref('18:00')
+
+const leaveHours = ref(0)
+
+const timeOptions = []
+
+for(let h=9; h<=18; h++){
+
+  timeOptions.push(
+      `${String(h).padStart(2,'0')}:00`
+  )
+
+  if(h !== 18){
+
+    timeOptions.push(
+        `${String(h).padStart(2,'0')}:30`
+    )
+
+  }
+
+}
+
 onMounted(async () => {
 
   await liff.init({
@@ -50,15 +73,16 @@ async function submitLeave() {
 
   try {
 
-    alert("開始送出")
-
     const payload = {
       userId: userId.value,
       name: name.value,
       leaveType: leaveType.value,
       startDate: startDate.value,
+      startTime:startTime.value,
       endDate: endDate.value,
-      reason: reason.value
+      endTime:endTime.value,
+      reason: reason.value,
+      leaveHours:leaveHours.value
     }
 
     const formData = new FormData()
@@ -76,7 +100,10 @@ async function submitLeave() {
         }
     )
 
-    alert("fetch完成")
+    alert(
+        'status=' +
+        response.status
+    )
 
   } catch (e) {
 
@@ -96,8 +123,6 @@ async function loadHistory() {
 
     const url =
         `${GAS_URL}?action=history&userId=${userId.value}`
-
-    alert(url)
 
     const response =
         await fetch(url)
@@ -185,10 +210,6 @@ async function approveLeave(
     leaveId
 ) {
 
-  alert(
-      '核准:' + leaveId
-  );
-
   const formData =
       new FormData()
 
@@ -224,9 +245,15 @@ async function rejectLeave(
     leaveId
 ) {
 
-  alert(
-      '退回:' + leaveId
-  );
+  const rejectReason =
+      prompt(
+          '請輸入退回原因'
+      )
+  if (
+      !rejectReason
+  ) {
+    return
+  }
 
   const formData =
       new FormData()
@@ -236,9 +263,11 @@ async function rejectLeave(
       JSON.stringify({
         action: 'reject',
         leaveId,
+        approver:name.value,
 
-        approver:
-        name.value
+        userId:userId.value,
+
+        rejectReason
       })
   )
 
@@ -258,6 +287,50 @@ async function rejectLeave(
   await loadPending()
 
 }
+
+function calculateLeaveHours() {
+
+  const start =
+      new Date(
+          `${startDate.value}T${startTime.value}`
+      )
+
+  const end =
+      new Date(
+          `${endDate.value}T${endTime.value}`
+      )
+
+  let minutes =
+      (
+          end - start
+      ) / 1000 / 60
+
+  const lunchStart =
+      new Date(
+          `${startDate.value}T12:00`
+      )
+
+  const lunchEnd =
+      new Date(
+          `${startDate.value}T13:00`
+      )
+
+  const overlap =
+      Math.max(
+          0,
+          Math.min(end, lunchEnd)
+          -
+          Math.max(start, lunchStart)
+      )
+
+  minutes =
+      minutes -
+      overlap / 1000 / 60
+
+  leaveHours.value =
+      minutes / 60
+}
+
 </script>
 
 <template>
@@ -335,7 +408,60 @@ async function rejectLeave(
 
       <input
           type="date"
-          v-model="startDate">
+          v-model="startDate"
+          @change="calculateLeaveHours"
+      />
+
+    </div>
+
+    <br>
+
+    <div>
+      <label>開始時間</label>
+      <select
+          v-model="startTime"
+          @change="calculateLeaveHours">
+
+        <option
+            v-for="time in timeOptions"
+            :key="time"
+            :value="time">
+
+          {{ time }}
+
+        </option>
+
+      </select>
+    </div>
+
+    <br>
+    <div>
+      <label>結束日期</label>
+      <input
+          type="date"
+          v-model="endDate"
+          @change="calculateLeaveHours"
+      />
+    </div>
+
+    <br>
+    <div>
+
+      <label>結束時間</label>
+      <select
+          v-model="endTime"
+          @change="calculateLeaveHours">
+
+        <option
+            v-for="time in timeOptions"
+            :key="time"
+            :value="time">
+
+          {{ time }}
+
+        </option>
+
+      </select>
 
     </div>
 
@@ -343,11 +469,13 @@ async function rejectLeave(
 
     <div>
 
-      <label>結束日期</label>
+      請假時數：
 
-      <input
-          type="date"
-          v-model="endDate">
+      <b>
+        {{ leaveHours }}
+      </b>
+
+      小時
 
     </div>
 
@@ -402,12 +530,24 @@ async function rejectLeave(
       </div>
 
       <div>
-        日期：
-        {{ item.startDate }}
-        ~
-        {{ item.endDate }}
-      </div>
+        日期時間：
 
+        {{ item.startDate }}
+        {{ item.startTime }}
+
+        ~
+
+        {{ item.endDate }}
+        {{ item.endTime }}
+      </div>
+      <div>
+
+        時數：
+
+        {{ Number(item.leaveHours).toFixed(1)  }}
+        小時
+
+      </div>
       <div>
         原因：
         {{ item.reason }}
@@ -466,10 +606,24 @@ async function rejectLeave(
 
       <div>
 
-        日期：
+        日期時間：
+
         {{ item.startDate }}
+        {{ item.startTime }}
+
         ~
+
         {{ item.endDate }}
+        {{ item.endTime }}
+
+      </div>
+
+      <div>
+
+        時數：
+
+        {{ item.leaveHours }}
+        小時
 
       </div>
 
@@ -503,6 +657,20 @@ async function rejectLeave(
 
         審核時間：
         {{ item.approveTime }}
+
+      </div>
+
+      <div
+          v-if="
+    item.status==='已退回'
+    &&
+    item.rejectReason
+  "
+      >
+
+        退回原因：
+
+        {{ item.rejectReason }}
 
       </div>
 
