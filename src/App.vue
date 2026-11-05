@@ -27,6 +27,14 @@ const leaveDays = ref(0)
 
 const timeOptions = []
 
+const balance =
+    ref({
+      totalHours:0,
+      usedHours:0,
+      remainHours:0
+    })
+
+//時間選項
 for(let h=9; h<=18; h++){
 
   timeOptions.push(
@@ -68,6 +76,8 @@ onMounted(async () => {
 
   role.value =
       await roleResponse.text()
+
+  await loadBalance()
 })
 
 async function submitLeave() {
@@ -456,6 +466,18 @@ function getWorkHours(
 
   return minutes / 60;
 }
+
+async function loadBalance(){
+
+  const response =
+      await fetch(
+          `${GAS_URL}?action=balance&userId=${userId.value}`
+      )
+
+  balance.value =
+      await response.json()
+
+}
 </script>
 
 <template>
@@ -471,6 +493,40 @@ function getWorkHours(
     角色：
 
     {{ role }}
+
+  </div>
+
+  <hr>
+
+  <h3>特休資訊</h3>
+
+  <div>
+
+    特休總額：
+
+    {{ balance.totalHours }}
+
+    小時
+
+  </div>
+
+  <div>
+
+    已使用：
+
+    {{ balance.usedHours }}
+
+    小時
+
+  </div>
+
+  <div>
+
+    剩餘：
+
+    {{ balance.remainHours }}
+
+    小時
 
   </div>
 
