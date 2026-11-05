@@ -23,6 +23,7 @@ const startTime = ref('09:00')
 const endTime = ref('18:00')
 
 const leaveHours = ref(0)
+const leaveDays = ref(0)
 
 const timeOptions = []
 
@@ -82,7 +83,8 @@ async function submitLeave() {
       endDate: endDate.value,
       endTime:endTime.value,
       reason: reason.value,
-      leaveHours:leaveHours.value
+      leaveHours:leaveHours.value,
+      leaveDays: leaveDays.value
     }
 
     const formData = new FormData()
@@ -288,49 +290,172 @@ async function rejectLeave(
 
 }
 
+//工作時數計算
 function calculateLeaveHours() {
 
-  const start =
-      new Date(
-          `${startDate.value}T${startTime.value}`
-      )
+  if (
+      !startDate.value ||
+      !endDate.value
+  ) {
 
-  const end =
+    leaveHours.value = 0
+    leaveDays.value = 0
+
+    return
+  }
+
+  let totalHours = 0;
+
+  let current =
       new Date(
-          `${endDate.value}T${endTime.value}`
-      )
+          startDate.value + 'T00:00:00'
+      );
+
+  let end =
+      new Date(
+          endDate.value + 'T00:00:00'
+      );
+
+  while(current <= end){
+
+    const dayOfWeek =
+        current.getDay();
+
+    // 星期日=0
+    // 星期六=6
+
+    if(
+        dayOfWeek === 0 ||
+        dayOfWeek === 6
+    ){
+
+      current.setDate(
+          current.getDate()+1
+      );
+
+      continue;
+    }
+
+
+    const yyyy =
+        current.getFullYear();
+
+    const mm =
+        String(
+            current.getMonth()+1
+        ).padStart(2,'0');
+
+    const dd =
+        String(
+            current.getDate()
+        ).padStart(2,'0');
+
+    const currentDate =
+        `${yyyy}-${mm}-${dd}`;
+
+    let beginTime = '09:00';
+    let finishTime = '18:00';
+
+    if(
+        currentDate ==
+        startDate.value
+    ){
+      beginTime =
+          startTime.value;
+    }
+
+    if(
+        currentDate ==
+        endDate.value
+    ){
+      finishTime =
+          endTime.value;
+    }
+
+    totalHours +=
+        getWorkHours(
+            currentDate,
+            beginTime,
+            finishTime
+        );
+
+    current.setDate(
+        current.getDate()+1
+    );
+  }
+
+  leaveHours.value =
+      Math.round(
+          totalHours * 2
+      ) / 2;
+
+  leaveDays.value =
+      Number(
+          (
+              leaveHours.value/8
+          ).toFixed(2)
+      );
+}
+function getWorkHours(
+    date,
+    beginTime,
+    finishTime
+){
+
+  const begin =
+      new Date(
+          `${date}T${beginTime}`
+      );
+
+  const finish =
+      new Date(
+          `${date}T${finishTime}`
+      );
+
+  if(finish <= begin){
+    return 0;
+  }
 
   let minutes =
-      (
-          end - start
-      ) / 1000 / 60
+      (finish - begin)
+      /
+      1000
+      /
+      60;
 
   const lunchStart =
       new Date(
-          `${startDate.value}T12:00`
-      )
+          `${date}T12:00`
+      );
 
   const lunchEnd =
       new Date(
-          `${startDate.value}T13:00`
-      )
+          `${date}T13:00`
+      );
 
   const overlap =
       Math.max(
           0,
-          Math.min(end, lunchEnd)
+          Math.min(
+              finish,
+              lunchEnd
+          )
           -
-          Math.max(start, lunchStart)
-      )
+          Math.max(
+              begin,
+              lunchStart
+          )
+      );
 
-  minutes =
-      minutes -
-      overlap / 1000 / 60
+  minutes -=
+      overlap
+      /
+      1000
+      /
+      60;
 
-  leaveHours.value =
-      minutes / 60
+  return minutes / 60;
 }
-
 </script>
 
 <template>
@@ -471,11 +596,19 @@ function calculateLeaveHours() {
 
       請假時數：
 
-      <b>
-        {{ leaveHours }}
-      </b>
+      <b>{{ leaveHours }}</b>
 
       小時
+
+    </div>
+
+    <div>
+
+      請假天數：
+
+      <b>{{ leaveDays }}</b>
+
+      天
 
     </div>
 
@@ -542,10 +675,18 @@ function calculateLeaveHours() {
       </div>
       <div>
 
-        時數：
+        請假時數：
 
         {{ Number(item.leaveHours).toFixed(1)  }}
         小時
+
+      </div>
+      <div>
+
+        請假天數：
+
+        {{ Number(item.leaveDays).toFixed(1)  }}
+        天
 
       </div>
       <div>
@@ -620,10 +761,19 @@ function calculateLeaveHours() {
 
       <div>
 
-        時數：
+        請假時數：
 
         {{ item.leaveHours }}
         小時
+
+      </div>
+
+      <div>
+
+        請假天數：
+
+        {{ item.leaveDays  }}
+        天
 
       </div>
 
