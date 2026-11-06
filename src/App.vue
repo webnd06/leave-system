@@ -226,7 +226,7 @@ async function loadPending() {
 }
 
 async function approveLeave(
-    leaveId
+    leaveId , userId
 ) {
 
   const formData =
@@ -237,9 +237,8 @@ async function approveLeave(
       JSON.stringify({
         action: 'approve',
         leaveId,
-
-        approver:
-        name.value
+        approver:name.value,
+        userId: userId
       })
   )
 
@@ -506,7 +505,7 @@ async function loadEmployees(){
 
   const response =
       await fetch(
-          `${GAS_URL}?action=employees`
+          `${GAS_URL}?action=employees&userId=${userId.value}`
       )
 
   employees.value =
@@ -818,13 +817,13 @@ async function loadEmployees(){
       </div>
 
       <button
-          @click="approveLeave(item.leaveId)"
+          @click="approveLeave(item.leaveId , item.userId)"
       >
         核准
       </button>
 
       <button
-          @click="rejectLeave(item.leaveId)"
+          @click="rejectLeave(item.leaveId , item.userId)"
       >
         退回
       </button>
