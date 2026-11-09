@@ -38,6 +38,8 @@ const balance =
       remainHours:0
     })
 
+const attachment =
+    ref(null)
 //時間選項
 for(let h=9; h<=18; h++){
 
@@ -90,6 +92,44 @@ async function submitLeave() {
 
   try {
 
+      if(
+          leaveType.value==='病假'
+          &&
+          !attachment.value
+      ){
+
+        alert(
+            '病假需上傳證明'
+        )
+
+        return
+      }
+
+    let attachmentData = null
+
+    if(
+        attachment.value
+    ){
+
+      const base64 =
+          await fileToBase64(
+              attachment.value
+          )
+
+      attachmentData = {
+
+        name:
+        attachment.value.name,
+
+        type:
+        attachment.value.type,
+
+        content:
+            base64.split(',')[1]
+
+      }
+    }
+
     const payload = {
       userId: userId.value,
       name: name.value,
@@ -102,28 +142,46 @@ async function submitLeave() {
       leaveDays: leaveDays.value,
       deputy: deputy.value,
       reason: reason.value,
+     attachment: attachmentData
     }
 
-    const formData = new FormData()
+    // const payload = {
+    //
+    //   test:'123',
+    //
+    //   attachment:attachmentData
+    //
+    // }
 
-    formData.append(
-        'data',
-        JSON.stringify(payload)
-    )
+    // await fetch(
+    //     GAS_URL,
+    //     {
+    //       method:'POST',
+    //
+    //       headers:{
+    //         'Content-Type':
+    //             'application/json'
+    //       },
+    //
+    //       body:
+    //           JSON.stringify(payload)
+    //     }
+    // )
 
-    const response = await fetch(
-        GAS_URL,
-        {
-          method: 'POST',
-          body: formData
-        }
-    )
+    // 2. 改用純文字 (text/plain) 將 JSON 傳送過去
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'cors', // 確保開啟跨網域
+      headers: {
+        // 💡 關鍵：使用 text/plain 可以完美繞過複雜的 CORS Preflight (OPTIONS) 請求
+        'Content-Type': 'text/plain'
+      },
+      body: JSON.stringify(payload) // 直接把整個物件轉成 JSON 字串當作 Body
+    })
 
-    alert(
-        'status=' +
-        response.status
-    )
-
+    const result = await response.json()
+    alert(JSON.stringify(result))
+    console.log(result)
   } catch (e) {
 
     alert(
@@ -512,6 +570,51 @@ async function loadEmployees(){
       await response.json()
 
 }
+
+const fileInfo = ref(null);
+
+function handleFile(
+    event
+){
+
+  attachment.value =
+      event.target.files[0]
+  const file = event.target.files[0];
+  if (file) {
+    fileInfo.value = file;
+  }
+
+}
+
+function fileToBase64(
+    file
+){
+
+  return new Promise(
+
+      (resolve,reject)=>{
+
+        const reader =
+            new FileReader()
+
+        reader.onload =
+            () => resolve(
+                reader.result
+            )
+
+        reader.onerror =
+            reject
+
+        reader.readAsDataURL(
+            file
+        )
+
+      }
+
+  )
+
+}
+
 </script>
 
 <template>
@@ -744,6 +847,29 @@ async function loadEmployees(){
 
     </div>
 
+    <div>
+
+      <label>
+
+        附件
+
+      </label>
+
+      <!-- 不加 accept 與 multiple，確保系統不反灰任何檔案 -->
+      <input
+          type="file"
+          @change="handleFile"
+      />
+
+      <div v-if="fileInfo" style="margin-top: 15px;">
+        <p>檔名：{{ fileInfo.name }}</p>
+        <p>大小：{{ (fileInfo.size / 1024).toFixed(2) }} KB</p>
+        <p>類型：{{ fileInfo.type || '未知 (空字串)' }}</p>
+      </div>
+    </div>
+
+    <br>
+
     <button @click="submitLeave">
       送出請假單
     </button>
@@ -815,7 +941,22 @@ async function loadEmployees(){
         原因：
         {{ item.reason }}
       </div>
+      <div
+          v-if="item.fileUrl"
+      >
 
+        附件：
+
+        <a
+            :href="item.fileUrl"
+            target="_blank"
+        >
+
+          查看附件
+
+        </a>
+
+      </div>
       <button
           @click="approveLeave(item.leaveId , item.userId)"
       >
@@ -947,6 +1088,23 @@ async function loadEmployees(){
       </div>
 
       <hr>
+
+      <div
+          v-if="item.fileUrl"
+      >
+
+        附件：
+
+        <a
+            :href="item.fileUrl"
+            target="_blank"
+        >
+
+          {{ item.fileName }}
+
+        </a>
+
+      </div>
 
     </div>
   </div>
