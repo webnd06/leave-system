@@ -145,29 +145,6 @@ async function submitLeave() {
      attachment: attachmentData
     }
 
-    // const payload = {
-    //
-    //   test:'123',
-    //
-    //   attachment:attachmentData
-    //
-    // }
-
-    // await fetch(
-    //     GAS_URL,
-    //     {
-    //       method:'POST',
-    //
-    //       headers:{
-    //         'Content-Type':
-    //             'application/json'
-    //       },
-    //
-    //       body:
-    //           JSON.stringify(payload)
-    //     }
-    // )
-
     // 2. 改用純文字 (text/plain) 將 JSON 傳送過去
     const response = await fetch(GAS_URL, {
       method: 'POST',
