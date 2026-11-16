@@ -215,32 +215,26 @@ async function cancelLeave(
     return
   }
 
-  const formData =
-      new FormData()
+  const payload = {
+    action: 'cancel',
+    leaveId,
+    approver:name.value
+  }
 
-  formData.append(
-      'data',
-      JSON.stringify({
+  // 2. 改用純文字 (text/plain) 將 JSON 傳送過去
+  const response = await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'cors', // 確保開啟跨網域
+    headers: {
+      // 💡 關鍵：使用 text/plain 可以完美繞過複雜的 CORS Preflight (OPTIONS) 請求
+      'Content-Type': 'text/plain'
+    },
+    body: JSON.stringify(payload) // 直接把整個物件轉成 JSON 字串當作 Body
+  })
 
-        action: 'cancel',
-
-        leaveId,
-
-        approver:
-        name.value
-
-      })
-  )
-
-  await fetch(
-      GAS_URL,
-      {
-
-        method: 'POST',
-
-        body: formData
-
-      }
+  alert(
+      'status=' +
+      response.status
   )
 
   await loadHistory()
@@ -264,26 +258,24 @@ async function approveLeave(
     leaveId , userId
 ) {
 
-  const formData =
-      new FormData()
 
-  formData.append(
-      'data',
-      JSON.stringify({
-        action: 'approve',
-        leaveId,
-        approver:name.value,
-        userId: userId
-      })
-  )
+  const payload = {
+    action: 'approve',
+    leaveId,
+    approver:name.value,
+    userId: userId
+  }
 
-  const response = await fetch(
-      GAS_URL,
-      {
-        method: 'POST',
-        body: formData
-      }
-  )
+  // 2. 改用純文字 (text/plain) 將 JSON 傳送過去
+  const response = await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'cors', // 確保開啟跨網域
+    headers: {
+      // 💡 關鍵：使用 text/plain 可以完美繞過複雜的 CORS Preflight (OPTIONS) 請求
+      'Content-Type': 'text/plain'
+    },
+    body: JSON.stringify(payload) // 直接把整個物件轉成 JSON 字串當作 Body
+  })
 
   alert(
       'status=' +
@@ -308,30 +300,24 @@ async function rejectLeave(
     return
   }
 
-  const formData =
-      new FormData()
+  const payload = {
+    action: 'reject',
+    leaveId,
+    approver:name.value,
+    userId:userId.value,
+    rejectReason
+  }
 
-  formData.append(
-      'data',
-      JSON.stringify({
-        action: 'reject',
-        leaveId,
-        approver:name.value,
-
-        userId:userId.value,
-
-        rejectReason
-      })
-  )
-
-
-  const response = await fetch(
-      GAS_URL,
-      {
-        method: 'POST',
-        body: formData
-      }
-  )
+  // 2. 改用純文字 (text/plain) 將 JSON 傳送過去
+  const response = await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'cors', // 確保開啟跨網域
+    headers: {
+      // 💡 關鍵：使用 text/plain 可以完美繞過複雜的 CORS Preflight (OPTIONS) 請求
+      'Content-Type': 'text/plain'
+    },
+    body: JSON.stringify(payload) // 直接把整個物件轉成 JSON 字串當作 Body
+  })
 
   alert(
       'status=' +
