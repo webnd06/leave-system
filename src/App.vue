@@ -66,6 +66,39 @@ onMounted(async () => {
   const profile =
       await liff.getProfile()
 
+/*
+  //暫時不用重新申請
+  //使用Router時取得參數
+  import { useRoute } from 'vue-router'
+  const route = useRoute()
+  const leaveId =
+    route.query.leaveId
+  const action =
+    route.query.action
+
+  //不用 Router時取得參數
+  const params =
+      new URLSearchParams(
+          window.location.search
+      );
+  const action =
+      params.get('action');
+  const leaveId =
+      params.get('leaveId');
+
+  // console.log(action);
+  // console.log(leaveId);
+
+  // if (
+  //     action === 'reapply'
+  // ) {
+  //
+  //   loadLeaveData(
+  //       leaveId
+  //   )
+  //
+  // }
+*/
   name.value =
       profile.displayName
 
