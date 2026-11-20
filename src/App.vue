@@ -75,7 +75,7 @@ onMounted(async () => {
     route.query.leaveId
   const action =
     route.query.action
-
+*/
   //不用 Router時取得參數
   const params =
       new URLSearchParams(
@@ -98,7 +98,7 @@ onMounted(async () => {
   //   )
   //
   // }
-*/
+
   name.value =
       profile.displayName
 
@@ -113,11 +113,25 @@ onMounted(async () => {
           `${GAS_URL}?action=role&userId=${userId.value}`
       )
 
-  role.value =
-      await roleResponse.text()
+  role.value = await roleResponse.text()
+
+  if(
+      action === 'history'
+  ){
+    currentTab.value = 'history'
+    await loadHistory(leaveId)
+  }
+
+  if(
+      action === 'pending'
+  ){
+
+    currentTab.value = 'approve'
+    await loadPending(leaveId)
+
+  }
 
   await loadBalance()
-
   await loadEmployees()
 })
 
@@ -204,12 +218,14 @@ async function submitLeave() {
 
 }
 
-async function loadHistory() {
+async function loadHistory(leaveId) {
 
   try {
+    // 判斷 leaveId 必須是「字串或數字」才有效，排除 PointerEvent 或 undefined
+    const validLeaveId = (typeof leaveId === 'string' || typeof leaveId === 'number') ? leaveId : ''
 
     const url =
-        `${GAS_URL}?action=history&userId=${userId.value}`
+        `${GAS_URL}?action=history&userId=${userId.value}&leaveId=${validLeaveId}`
 
     const response =
         await fetch(url)
@@ -275,11 +291,13 @@ async function cancelLeave(
 }
 
 //主管相關
-async function loadPending() {
+async function loadPending(leaveId) {
+  // 判斷 leaveId 必須是「字串或數字」才有效，排除 PointerEvent 或 undefined
+  const validLeaveId = (typeof leaveId === 'string' || typeof leaveId === 'number') ? leaveId : ''
 
   const response =
       await fetch(
-          `${GAS_URL}?action=pending&userId=${userId.value}`
+          `${GAS_URL}?action=pending&userId=${userId.value}&leaveId=${validLeaveId}`
       )
 
   pendingList.value =
@@ -880,7 +898,7 @@ function fileToBase64(
   "
   >
 
-    <button @click="loadPending">
+    <button @click="loadPending()">
       載入待審核
     </button>
 
@@ -972,7 +990,7 @@ function fileToBase64(
 
   <div v-if="currentTab==='history'">
 
-    <button @click="loadHistory">
+    <button @click="loadHistory()">
       重新載入
     </button>
     <h3>請假紀錄</h3>
